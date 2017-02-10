@@ -86,8 +86,8 @@ if __name__ == "__main__":
     main流程
     """
     # 初始化fetcher, parser和saver
-    fetcher = NBAFetcher(critical_max_repeat=3, critical_sleep_time=0)
-    parser = NBAParser(max_deep=-1, max_repeat=3)
+    fetcher = NBAFetcher()
+    parser = NBAParser(max_deep=-1)
     saver = NBASaver(file_name_total="nba_total.txt", file_name_pergame="nba_pergame.txt")
 
     # 初始化爬虫, 并传入初始Url

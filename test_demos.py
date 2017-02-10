@@ -6,13 +6,47 @@ test_demos.py by xianhu
 
 import re
 import spider
-import pymysql
+import pymongo
 import logging
 import requests
+import json
 from bs4 import BeautifulSoup
 from demos_doubanmovies import MovieFetcher, MovieParser
 from demos_dangdang import BookFetcher, BookParser, BookSaver
 
+
+class MovieSaver(spider.Saver):
+    key_names = ["m_url","m_name","m_year","m_imgurl","m_director","m_writer","m_actors",
+                            "m_genre","m_country","m_language","m_release","m_season","m_jishu","m_length","m_alias","m_website","m_dbsite",""
+                            "m_imdb","m_score","m_comment","m_starpercent"]
+
+    def __init__(self):
+        spider.Saver.__init__(self)
+        connection = pymongo.MongoClient(
+            'localhost',
+            27017
+        )
+        db = connection['douban']
+        self.collection = db['movie']
+        #self.conn = pymysql.connect(host="localhost", user="username", password="password", db="douban_movie", charset="utf8")
+        #self.cursor = self.conn.cursor()
+        #self.conn.autocommit(1)
+        return
+
+    def item_save(self, url, keys, item):
+        '''
+        self.cursor.execute("insert into t_doubanmovies (m_url, m_name, m_year, m_imgurl, m_director, m_writer, m_actors, "
+                            "m_genre, m_country, m_language, m_release, m_season, m_jishu, m_length, m_alias, m_website, m_dbsite, "
+                            "m_imdb, m_score, m_comment, m_starpercent)"
+                            " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);",
+                            [i.strip() if i is not None else "" for i in item])
+        '''
+        movie = {}
+        for i in range(len(MovieSaver.key_names)):
+          movie[self.key_names[i]] = item[i].strip()
+
+        self.collection.insert_one(movie).inserted_id
+        return True
 
 def get_douban_movies():
 
@@ -47,7 +81,7 @@ def get_douban_movies():
     logging.warning("all urls: %s", len(all_urls))
 
     # 构造爬虫
-    dou_spider = spider.WebSpider(MovieFetcher(), MovieParser(max_deep=-1), spider.Saver(), spider.UrlFilter())
+    dou_spider = spider.WebSpider(MovieFetcher(), MovieParser(max_deep=-1), MovieSaver(), spider.UrlFilter())
     for tag, url in all_urls:
         dou_spider.set_start_url(url, ("index", tag), priority=1)
     dou_spider.start_work_and_wait_done(fetcher_num=20)
