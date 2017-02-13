@@ -114,4 +114,5 @@ web_spider_async.start_work_and_wait_done(fetcher_num=20)
 3. demos_doubanmovies
 4. demos_dangdang
 
-### If you have any questions or advices, you can commit "Issues" or "Pull requests"
+#### dump mongodb data to json
+mongoexport --db douban --collection movie --out douban_movie.json

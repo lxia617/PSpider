@@ -4,6 +4,7 @@ import spider
 from bs4 import BeautifulSoup
 
 
+
 class MovieParser(spider.Parser):
 
     def htm_parse(self, priority, url, keys, deep, content):
@@ -16,11 +17,17 @@ class MovieParser(spider.Parser):
             url_list.extend([(item.get("href"), ("detail", keys[1]), 0) for item in div_movies])
 
             # 获取列表页的下一页
+
             next_page = soup.find("span", class_="next")
             if next_page:
-                next_page_a = next_page.find("a")
-                if next_page_a:
-                    url_list.append((next_page_a.get("href"), ("index", keys[1]), 1))
+                urllist = url.split('&')
+                if len(urllist) == 2 :
+                    ids = urllist[1].split('=')
+
+                    if len(ids) == 2:
+                        id = int(ids[1]) + 20
+                        url_list.append(('https://movie.douban.com/tag/2015?type=O&start=' + str(id), ("index", keys[1]), 1))
+
         else:
             content = soup.find("div", id="content")
 
@@ -29,7 +36,7 @@ class MovieParser(spider.Parser):
             name, year = name_and_year if len(name_and_year) == 2 else (name_and_year[0], "")
             movie = [url, name.strip(), year.strip("()")]
 
-            # 左边
+            # info
             content_left = soup.find("div", class_="subject clearfix")
 
             nbg_soup = content_left.find("a", class_="nbgnbg").find("img")
@@ -41,34 +48,71 @@ class MovieParser(spider.Parser):
             movie.append(info_dict.get("导演", "").replace("\t", " "))
             movie.append(info_dict.get("编剧", "").replace("\t", " "))
             movie.append(info_dict.get("主演", "").replace("\t", " "))
-
             movie.append(info_dict.get("类型", "").replace("\t", " "))
             movie.append(info_dict.get("制片国家/地区", "").replace("\t", " "))
             movie.append(info_dict.get("语言", "").replace("\t", " "))
-
-            movie.append(info_dict.get("上映日期", "").replace("\t", " ") if "上映日期" in info_dict else info_dict.get("首播", "").replace("\t", " "))
+            movie.append(info_dict.get("上映日期", "").replace("\t", " "))
             movie.append(info_dict.get("季数", "").replace("\t", " "))
             movie.append(info_dict.get("集数", "").replace("\t", " "))
-            movie.append(info_dict.get("片长", "").replace("\t", " ") if "片长" in info_dict else info_dict.get("单集片长", "").replace("\t", " "))
-
+            movie.append(info_dict.get("片长", "").replace("\t", " "))
             movie.append(info_dict.get("又名", "").replace("\t", " "))
             movie.append(info_dict.get("官方网站", "").replace("\t", " "))
-            movie.append(info_dict.get("官方小站", "").replace("\t", " "))
             movie.append(info_dict.get("IMDb链接", "").replace("\t", " "))
 
-            # 右边
-            content_right = soup.find("div", class_="rating_wrap clearbox")
-            if content_right:
-                movie.append(content_right.find("strong", class_="ll rating_num").get_text())
 
-                rating_people = content_right.find("a", class_="rating_people")
-                movie.append(rating_people.find("span").get_text() if rating_people else "")
+            # rating
+            content_right = soup.find("div", class_="rating_wrap clearbox").find("strong", class_="ll rating_num")
+            if content_right and len(content_right.get_text()) > 0:
+                movie.append(content_right.get_text())
+            else :
+                movie.append("")
 
-                rating_per_list = [item.get_text() for item in content_right.find_all("span", class_="rating_per")]
-                movie.append(", ".join(rating_per_list))
-            else:
-                movie.extend(["", "", ""])
 
-            assert len(movie) == 21, "length of movie is invalid"
+            #summary
+            summary = soup.find("div", id="link-report")
+            if summary and len(summary.get_text().replace("\t", "").replace("\n", "").strip()) > 0:
+                movie.append(summary.get_text().replace("\t", "").replace("\n", "").strip())
+            else :
+                movie.append("")
+
+            #likes
+            likes = soup.find("div", class_="recommendations-bd").findAll("a")
+
+            if likes :
+                like_lists = []
+                for l in likes :
+                    like_lists.append(l.get_text().replace("\t", "").replace("\n", "").strip())
+                if len(like_lists) > 0 :
+                    movie.append(" ".join(like_lists))
+                else:
+                    movie.append("")
+            else :
+                movie.append("")
+
+            #tags
+            tags = soup.find("div", class_="tags-body").findAll("a")
+            if tags :
+                tags_lists = []
+                for t in tags :
+                    tags_lists.append(t.get_text())
+                if len(tags_lists) > 0 :
+                    movie.append(" ".join(tags_lists))
+            else :
+                movie.append("")
+
+            #doulist
+            dou = soup.find("div", id="subject-doulist").findAll("a")
+            if dou :
+                dou_lists = []
+                for d in dou :
+                    dou_lists.append(d.get_text())
+                if len(dou_lists) > 0 :
+                    movie.append(" ".join(dou_lists))
+                else:
+                    movie.append("")
+            else :
+                movie.append("")
+
+            assert len(movie) == 22, "length of movie is invalid"
             save_list.append(movie)
         return 1, url_list, save_list
