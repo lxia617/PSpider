@@ -5,7 +5,9 @@ import sys
 from bs4 import BeautifulSoup
 
 class MovieParser(spider.Parser):
-
+    fail_count = 0
+    index_count = 0
+    parse_count = 0
     def htm_parse(self, priority, url, keys, deep, content):
         url_list, save_list = [], []
         soup = BeautifulSoup(content, "html5lib")
@@ -15,6 +17,9 @@ class MovieParser(spider.Parser):
             div_movies = soup.find_all("a", class_="nbg", title=True)
             print(url, "div_movies len:", len(div_movies))
             url_list.extend([(item.get("href"), ("detail", keys[1]), 0) for item in div_movies])
+            self.index_count = self.index_count + 20
+            if self.index_count % 100 == 0:
+                print("index_count:", self.index_count, ",parse_count:", self.parse_count)
 
             # 获取列表页的下一页
 
@@ -26,15 +31,17 @@ class MovieParser(spider.Parser):
                     if len(ids) == 2:
                         id = int(ids[1]) + 20
                         url_list.append(('https://movie.douban.com/tag/2015?type=O&start=' + str(id), ("index", keys[1]), 1))
-
         else:
+            movie = [url]
+            self.parse_count = self.parse_count + 1
             try:
                 content = soup.find("div", id="content")
 
                 # 标题
                 name_and_year = [item.get_text() for item in content.find("h1").find_all("span")]
                 name, year = name_and_year if len(name_and_year) == 2 else (name_and_year[0], "")
-                movie = [url, name.strip(), year.strip("()")]
+                movie.append(name.strip())
+                movie.append(year.strip("()"))
 
                 # info
                 content_left = soup.find("div", class_="subject clearfix")
@@ -62,15 +69,16 @@ class MovieParser(spider.Parser):
 
                 # score & rating num
                 rating_wrap = soup.find("div", class_="rating_wrap clearbox")
-                rating_num = rating_wrap.find("strong", class_="ll rating_num")
-                if rating_num and len(rating_num.get_text()) > 0:
-                    movie.append(rating_num.get_text())
+                if rating_wrap and rating_wrap.find("strong", class_="ll rating_num"):
+                    movie.append(rating_wrap.find("strong", class_="ll rating_num").get_text())
                 else :
                     movie.append("")
 
-                rating_sum = rating_wrap.find("a", class_="rating_people").find("span")
-                if rating_sum and len(rating_sum.get_text()) > 0:
-                    movie.append(rating_sum.get_text())
+                rating_sum = None
+                if rating_wrap:
+                    rating_sum = rating_wrap.find("a", class_="rating_people")
+                if rating_sum and rating_sum.find("span") and len(rating_sum.find("span").get_text()) > 0:
+                    movie.append(rating_sum.find("span").get_text())
                 else :
                     movie.append("")
 
@@ -82,11 +90,11 @@ class MovieParser(spider.Parser):
                     movie.append("")
 
                 #likes
-                likes = soup.find("div", class_="recommendations-bd").findAll("dd")
+                likes = soup.find("div", class_="recommendations-bd")
 
-                if likes :
+                if likes and likes.findAll("dd"):
                     like_lists = []
-                    for l in likes :
+                    for l in likes.findAll("dd") :
                         like_lists.append(l.find("a").get_text().replace("\t", "").replace("\n", "").strip())
                     if len(like_lists) > 0 :
                         movie.append(",".join(like_lists))
@@ -96,7 +104,9 @@ class MovieParser(spider.Parser):
                     movie.append("")
 
                 #tags
-                tags = soup.find("div", class_="tags-body").findAll("a")
+                tags = None
+                if soup.find("div", class_="tags-body"):
+                    tags = soup.find("div", class_="tags-body").findAll("a")
                 if tags :
                     tags_lists = []
                     for t in tags :
@@ -107,7 +117,9 @@ class MovieParser(spider.Parser):
                     movie.append("")
 
                 #doulist
-                dou = soup.find("div", id="subject-doulist").findAll("a")
+                dou = None
+                if soup.find("div", id="subject-doulist"):
+                    dou = soup.find("div", id="subject-doulist").findAll("a")
                 if dou :
                     dou_lists = []
                     for d in dou :
@@ -122,5 +134,7 @@ class MovieParser(spider.Parser):
                 assert len(movie) == 23, "length of movie is invalid"
                 save_list.append(movie)
             except:
-                print("Unexpected error when fetching:", url, " ", sys.exc_info())
+                print(++self.fail_count, "Unexpected error when fetching:", url, " ", sys.exc_info(), movie, "\n\n")
+                if (len(movie) < 2):
+                    print("page", soup.prettify())
         return 1, url_list, save_list
