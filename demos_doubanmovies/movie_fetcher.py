@@ -5,13 +5,14 @@ import string
 import spider
 import logging
 import requests
+import pymongo
 import requests.adapters
 requests.packages.urllib3.disable_warnings()
 
 
 class MovieFetcher(spider.Fetcher):
 
-    def __init__(self):
+    def __init__(self, start_year, end_year):
         spider.Fetcher.__init__(self, max_repeat=3, sleep_time=0)
 
         self.session = requests.Session()
@@ -33,6 +34,7 @@ class MovieFetcher(spider.Fetcher):
         return
 
     def url_fetch(self, url, keys, repeat):
+
         resp = self.session.get(url, allow_redirects=False, verify=False, timeout=5)
         if resp.status_code == 200:
             return 1, resp.text

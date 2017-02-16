@@ -9,17 +9,14 @@ class MovieSaver(spider.Saver):
                  "m_genre","m_country","m_language","m_release","m_season","m_jishu","m_length","m_alias","m_website","m_dbsite",
                  "m_score", "m_ratingsum", "m_summary","m_likes", "m_tags", "m_doulist"]
 
-    def __init__(self):
+    def __init__(self, start_year, end_year):
         spider.Saver.__init__(self)
         connection = pymongo.MongoClient(
             'localhost',
             27017
         )
         db = connection['douban']
-        self.collection = db['movie_all']
-        #self.conn = pymysql.connect(host="localhost", user="username", password="password", db="douban_movie", charset="utf8")
-        #self.cursor = self.conn.cursor()
-        #self.conn.autocommit(1)
+        self.collection = db['movie' + str(end_year) + '_' + str(start_year)]
         return
 
     def item_save(self, url, keys, item):
