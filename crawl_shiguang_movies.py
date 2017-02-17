@@ -60,6 +60,7 @@ def get_shiguang_movies():
             list_dict["movies"] = []
             pagerPopUl = soup.find("ul", id="pagerPopUl")
             if pagerPopUl:
+                # http://movie.mtime.com/list/1473.html
                 lis = pagerPopUl.find_all("li")
             else:
                 lis = soup.find_all("div", class_="texter")

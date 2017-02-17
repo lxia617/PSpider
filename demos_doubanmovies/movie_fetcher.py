@@ -33,12 +33,14 @@ class MovieFetcher(spider.Fetcher):
         }
         return
 
-    def url_fetch(self, url, keys, repeat):
-
-        resp = self.session.get(url, allow_redirects=False, verify=False, timeout=5)
-        if resp.status_code == 200:
-            return 1, resp.text
-        logging.warning("Fetcher change cookie: %s", resp.status_code)
-        self.clear_session()
-        resp.raise_for_status()
-        return 1, resp.text
+    def url_fetch(self, url, keys = {}, repeat = 3):
+        repeat_i = 0
+        while repeat_i < repeat:
+            resp = self.session.get(url, allow_redirects=False, verify=True, timeout=5)
+            if resp.status_code == 200:
+                return 1, resp.text
+            logging.warning("Fetcher change cookie: %s", resp.status_code)
+            self.clear_session()
+            repeat_i = repeat_i + 1
+            resp.raise_for_status()
+        return 0, resp.text

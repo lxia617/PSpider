@@ -116,3 +116,4 @@ web_spider_async.start_work_and_wait_done(fetcher_num=20)
 
 #### dump mongodb data to json
 mongoexport --db douban --collection movie --out douban_movie.json
+mongoexport --db douban_merge --collection movie --out douban_movie_merge.json
