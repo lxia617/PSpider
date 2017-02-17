@@ -42,7 +42,7 @@ RUN make clean
 RUN make distclean
 
 # install libs of python3
-ADD ./Dockerfile_requirements.txt /root/
+ADD ./otherfiles/Dockerfile_requirements.txt /root/
 WORKDIR /root/
 RUN pip3 install --upgrade pip
 RUN pip3 install -r Dockerfile_requirements.txt
@@ -54,6 +54,9 @@ RUN ln -sf /usr/bin/python2.6 /usr/bin/python2
 
 # change /usr/bin/yum
 RUN sed -i 's/usr\/bin\/python/usr\/bin\/python2/g' /usr/bin/yum
+
+ADD . /root/PSpider
+WORKDIR /root/PSpider
 
 # cmd command
 CMD /bin/bash
